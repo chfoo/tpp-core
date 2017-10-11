@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace TPPCommon
 {
+    /// <summary>
+    /// Counter for retry attempt throttling with exponential backoff.
+    /// </summary>
     public class ExponentialBackoffCounter {
         public int MinimumBackoffTime {get; set;} = 1_000;
         public int MaximumBackoffTime {get; set;} = 300_000;
