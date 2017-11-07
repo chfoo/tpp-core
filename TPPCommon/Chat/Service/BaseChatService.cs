@@ -47,19 +47,12 @@ namespace TPPCommon.Chat.Service {
         override protected void Run()
         {
             while (true) {
-                Logger.LogInfo("Chat service connecting");
+                Connect().Wait();
 
-                try {
-                    ChatClient.ConnectAsync(ConnectionConfig).Wait();
-                } catch (SocketException error) {
-                    Logger.LogError("Error connecting to chat", error);
-
-                    backoff.Increment();
-                    backoff.Sleep();
+                if (!ChatClient.IsConnected())
+                {
+                    continue;
                 }
-
-                Logger.LogInfo("Chat service connected");
-                backoff.Reset();
 
                 ProcessMessagesAsync().Wait();
 
@@ -69,7 +62,28 @@ namespace TPPCommon.Chat.Service {
             }
         }
 
-        protected async Task ProcessMessagesAsync()
+        public void InitializeClient() {
+            Initialize();
+        }
+
+        public async Task Connect()
+        {
+            Logger.LogInfo("Chat service connecting");
+
+            try {
+                await ChatClient.ConnectAsync(ConnectionConfig);
+            } catch (SocketException error) {
+                Logger.LogError("Error connecting to chat", error);
+
+                backoff.Increment();
+                await backoff.SleepAsync();
+            }
+
+            Logger.LogInfo("Chat service connected");
+            backoff.Reset();
+        }
+
+        public async Task ProcessMessagesAsync()
         {
             Logger.LogDebug("Processing messages");
 
@@ -83,7 +97,7 @@ namespace TPPCommon.Chat.Service {
             Logger.LogDebug("Stopped processing messages");
         }
 
-        protected async Task SendMessagesAsync()
+        public async Task SendMessagesAsync()
         {
             Logger.LogDebug("Processing sending messages");
 
@@ -95,19 +109,23 @@ namespace TPPCommon.Chat.Service {
             Logger.LogDebug("Stopped sending messages");
         }
 
-        protected async Task ReceiveMessagesAsync()
+        public async Task ReceiveMessagesAsync()
         {
             Logger.LogDebug("Processing receiving messages");
 
             while (ChatClient.IsConnected()) {
-                var message = await ChatClient.ReceiveMessageAsync();
-                ChatMessageEvent chatEvent =
-                    new ChatMessageEvent(ServiceName, message);
-
-                Publisher.Publish(chatEvent);
+                await ReceiveOneMessageAsync();
             }
 
             Logger.LogDebug("Stopped receiving messages");
+        }
+
+        public async Task ReceiveOneMessageAsync()
+        {
+            var message = await ChatClient.ReceiveMessageAsync();
+            ChatMessageEvent chatEvent =
+                new ChatMessageEvent(ServiceName, message);
+            Publisher.Publish(chatEvent);
         }
     }
 }

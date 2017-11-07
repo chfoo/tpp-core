@@ -14,11 +14,12 @@ namespace TPPCommon.Chat.Client {
 
         public async Task ConnectAsync(ConnectionConfig config)
         {
-            if (dummyReceiveCounter % 2 == 0) {
+            if (dummyReceiveCounter % 2 == 1) {
                 throw new SocketException(1);
             }
 
             _isConnected = true;
+            dummyReceiveCounter++;
             await Task.Delay(1000);
         }
 

@@ -24,6 +24,8 @@ namespace TPPCommon.Chat.Service
                 IConfigReader configReader) :
                 base (publisher, subscriber, loggerFactory, configReader)
         {
+            ChatClient = new Client.DummyChatClient();
+            ConnectionConfig = new Client.ConnectionConfig();
         }
     }
 }
